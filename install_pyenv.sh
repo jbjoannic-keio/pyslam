@@ -24,13 +24,21 @@ if ! pyenv install --list &> /dev/null; then
         echo "folder ~/.pyenv is already set"
     fi  
 
+<<<<<<< HEAD
     if grep -q "PYENV_ROOT" "/home/$USER/.bashrc"; then 
+=======
+    if grep -q "PYENV_ROOT" "~/.bashrc"; then 
+>>>>>>> master
         echo "already found pyenv settings in ~/.bashrc"  
     else 
         echo "adding pyenv setting to bashrc"
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
         echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+<<<<<<< HEAD
         echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init --path)"\nfi' >> ~/.bashrc
+=======
+        echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc
+>>>>>>> master
     fi 
 
     source ~/.bashrc

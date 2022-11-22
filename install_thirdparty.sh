@@ -18,6 +18,12 @@ STARTING_DIR=`pwd`  # this should be the main folder directory of the repo
 # N.B.: this script requires that you have first run:
 #./install_basic.sh 
 # ====================================================
+if [[ -z "${USE_PYSLAM_ENV}" ]]; then
+    USE_PYSLAM_ENV=0
+fi
+if [ $USE_PYSLAM_ENV -eq 1 ]; then
+    . pyenv-activate.sh
+fi  
 
 if [[ -z "${USE_PYSLAM_ENV}" ]]; then
     USE_PYSLAM_ENV=0
@@ -82,6 +88,7 @@ else
     if [ ! -d pangolin ]; then
         if [[ "$OSTYPE" == "linux-gnu"* ]]; then    
             sudo apt-get install -y libglew-dev
+<<<<<<< HEAD
             # git clone https://github.com/uoip/pangolin.git
             # cd pangolin
             # PANGOLIN_UOIP_REVISION=3ac794a
@@ -90,6 +97,15 @@ else
             # # copy local changes 
             # rsync ./pangolin_changes/python_CMakeLists.txt ./pangolin/python/CMakeLists.txt 
             git clone --recursive https://gitlab.com/luigifreda/pypangolin.git pangolin
+=======
+            git clone https://github.com/uoip/pangolin.git
+            cd pangolin
+            PANGOLIN_UOIP_REVISION=3ac794a
+            git checkout $PANGOLIN_UOIP_REVISION
+            cd ..      
+            # copy local changes 
+            rsync ./pangolin_changes/python_CMakeLists.txt ./pangolin/python/CMakeLists.txt             
+>>>>>>> master
         fi 
         if [[ "$OSTYPE" == "darwin"* ]]; then
             git clone --recursive https://gitlab.com/luigifreda/pypangolin.git pangolin 
