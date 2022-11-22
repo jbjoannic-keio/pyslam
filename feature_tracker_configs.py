@@ -252,3 +252,12 @@ class FeatureTrackerConfigs(object):
                 descriptor_type = FeatureDescriptorTypes.L2NET, 
                 match_ratio_test = kRatioTest,                        
                 tracker_type = kTrackerType) 
+
+    # TEST EN METTANT HL
+    HL = dict(num_features=kNumFeatures, 
+                num_levels = 8, 
+                scale_factor = 1.2, 
+                detector_type = FeatureDetectorTypes.HL, 
+                descriptor_type = FeatureDescriptorTypes.ORB2, 
+                match_ratio_test = kRatioTest,                        
+                tracker_type = kTrackerType) 

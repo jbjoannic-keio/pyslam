@@ -74,6 +74,7 @@ if __name__ == "__main__":
     # select your tracker configuration (see the file feature_tracker_configs.py) 
     # FeatureTrackerConfigs: SHI_TOMASI_ORB, FAST_ORB, ORB, ORB2, ORB2_FREAK, ORB2_BEBLID, BRISK, AKAZE, FAST_FREAK, SIFT, ROOT_SIFT, SURF, SUPERPOINT, FAST_TFEAT, CONTEXTDESC
     tracker_config = FeatureTrackerConfigs.TEST
+    # tracker_config = FeatureTrackerConfigs.HL
     tracker_config['num_features'] = num_features
     tracker_config['tracker_type'] = tracker_type
     
