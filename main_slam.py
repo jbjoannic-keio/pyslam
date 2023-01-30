@@ -92,7 +92,9 @@ if __name__ == "__main__":
 
     if platform.system() == 'Linux':
         display2d = Display2D(cam.width, cam.height)  # pygame interface
-        three_dimensional_frame = ThreeDimensionalFrame()
+        print(cam.height, cam.width)
+        three_dimensional_frame = ThreeDimensionalFrame(cam,
+                                                        (cam.height, cam.width, 3))
     else:
         display2d = None  # enable this if you want to use opencv window
 
@@ -126,12 +128,14 @@ if __name__ == "__main__":
 
                 img_draw = slam.map.draw_feature_trails(img)
 
-                three_dimentional_frame = three_dimensional_frame.draw_twc(
+                three_dimensional_img, three_dimensional_grid = three_dimensional_frame.draw_twc(
                     slam)
 
                 # 2D display (image display)
                 if display2d is not None:
-                    display2d.draw(img_draw)
+                    cv2.imshow("raw", img)
+                    display2d.draw(img_draw, img, three_dimensional_img,
+                                   three_dimensional_grid)
                 else:
                     cv2.imshow('Camera', img_draw)
 
@@ -208,6 +212,12 @@ if __name__ == "__main__":
         if viewer3D is not None:
             is_paused = not viewer3D.is_paused()
 
+    if display2d is not None:
+        display2d.quit()
+    if viewer3D is not None:
+        viewer3D.quit()
+    if matched_points_plt is not None:
+        matched_points_plt.quit()
     slam.quit()
 
     # cv2.waitKey(0)

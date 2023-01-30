@@ -18,12 +18,15 @@
 """
 
 #import pygame
-print("importing pygame")
+from pygame.locals import DOUBLEBUF
+import cv2
 import pygame
+import numpy as np
+import math
+print("importing pygame")
 print("initialising pygame")
 pygame.init()
 
-from pygame.locals import DOUBLEBUF
 
 class Display2D(object):
     def __init__(self, W, H, is_BGR=True):
@@ -32,22 +35,48 @@ class Display2D(object):
         self.screen = pygame.display.set_mode((W, H), DOUBLEBUF)
         self.surface = pygame.Surface(self.screen.get_size()).convert()
         self.is_BGR = is_BGR
+        self.first_redim = True
+        self.result = cv2.VideoWriter(
+            "./videos/result.mp4", cv2.VideoWriter_fourcc(*'MJPG'), 10, (W, H))
+        self.result2 = cv2.VideoWriter(
+            "./videos/result2.mp4", cv2.VideoWriter_fourcc(*'MJPG'), 10, (W, H))
 
     def quit(self):
+        self.result.release()
+        self.result2.release()
         pygame.display.quit()
         pygame.quit()
 
-    def draw(self, img):
+    def draw(self, img, imraw, three_dimensional_img, three_dimensional_grid):
+        if three_dimensional_img.shape[0] > 0:
+            img_partial_fused = cv2.add(imraw, three_dimensional_grid)
+            cv2.imshow("partial_fused", img_partial_fused)
+            self.result.write(img_partial_fused)
+            img = cv2.add(img, three_dimensional_grid)
+            n = np.shape(img)[0]
+            height, length = np.shape(three_dimensional_img)[:2]
+            ratio = length/height
+            self.result2.write(img)
+            three_dimensional_img = cv2.resize(
+                three_dimensional_img, (math.floor(ratio*n), n))
+            img = np.hstack((img, three_dimensional_img))
+            if self.first_redim:
+                H, W = np.shape(img)[:2]
+                self.screen = pygame.display.set_mode((W, H), DOUBLEBUF)
+                self.surface = pygame.Surface(self.screen.get_size()).convert()
+                self.first_redim = False
         # junk
         for event in pygame.event.get():
             pass
 
         if self.is_BGR:
             # draw BGR
-            pygame.surfarray.blit_array(self.surface, img.swapaxes(0, 1)[:, :, [2, 1, 0]])
+            pygame.surfarray.blit_array(
+                self.surface, img.swapaxes(0, 1)[:, :, [2, 1, 0]])
         else:
             # draw RGB, not BGR
-            pygame.surfarray.blit_array(self.surface, img.swapaxes(0,1)[:, :, [0,1,2]])
+            pygame.surfarray.blit_array(
+                self.surface, img.swapaxes(0, 1)[:, :, [0, 1, 2]])
 
         self.screen.blit(self.surface, (0, 0))
 
