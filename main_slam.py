@@ -209,6 +209,10 @@ if __name__ == "__main__":
                 matched_points_plt.quit()
             break
 
+        if key == 'r' or (key_cv == ord('r')):
+            if display2d is not None:
+                three_dimensional_frame.reset_position()
+
         if viewer3D is not None:
             is_paused = not viewer3D.is_paused()
 

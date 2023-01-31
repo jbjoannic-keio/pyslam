@@ -63,10 +63,13 @@ class ThreeDimensionalFrame(object):
         self.rotation_frame_point = None
         self.pixel_frame_point = None
 
-        self.original_grid_point_wo_translation = self.create_grid(
-            -10, 10, 1, 1, -30, 30)
+        self.original_grid_point_wo_translation, self.original_grid_line_direction = self.create_grid(
+            -2, 2, 1, 1, -30, 30)
         self.rotation_grid_point = None
         self.pixel_grid_point = None
+
+    def reset_position(self):
+        return
 
     def compute_inv(self, twc):
         R = twc[0:3, 0:3]
@@ -78,19 +81,29 @@ class ThreeDimensionalFrame(object):
 
     def create_grid(self, x1, x2, y1, y2, z1, z2):
         original = []
+        line_direction = []
         for x in range(x1, x2+1):
             for y in range(y1, y2+1):
-                original.append([x, y, z1, 1])
-                original.append([x, y, z2, 1])
+                if z1 != z2:
+                    original.append([x, y, z1, 1])
+                    original.append([x, y, z2, 1])
+                    line_direction.append(2)
+                    line_direction.append(2)
         for y in range(y1, y2+1):
             for z in range(z1, z2+1):
-                original.append([x1, y, z, 1])
-                original.append([x2, y, z, 1])
+                if x1 != x2:
+                    original.append([x1, y, z, 1])
+                    original.append([x2, y, z, 1])
+                    line_direction.append(0)
+                    line_direction.append(0)
         for x in range(x1, x2+1):
             for z in range(z1, z2+1):
-                original.append([x, y1, z, 1])
-                original.append([x, y2, z, 1])
-        return original
+                if y1 != y2:
+                    original.append([x, y1, z, 1])
+                    original.append([x, y2, z, 1])
+                    line_direction.append(1)
+                    line_direction.append(1)
+        return original, line_direction
 
     def compute_frame_rotation(self, original):
         view_wo_translation = self.view.copy()
@@ -108,7 +121,7 @@ class ThreeDimensionalFrame(object):
         rotation = np.dot(view_wo_translation, original)
         return rotation
 
-    def correct_grid_rotation(self, rotation):
+    def correct_grid_rotation(self, rotation, line_direction):
         corrected_rotation = rotation.copy().astype(np.float64)
         for i in range(0, corrected_rotation.shape[1], 2):
             if corrected_rotation[2, i] < 0.1 and corrected_rotation[2, i+1] > 0.1:
@@ -135,7 +148,7 @@ class ThreeDimensionalFrame(object):
                 corrected_rotation[:, i+1] = np.array([0, 0, 0, 0])
         mask = np.where(
             corrected_rotation[3, :] != 0, True, False)
-        return corrected_rotation[:, mask]
+        return corrected_rotation[:, mask],  line_direction[mask]
 
     def compute_oblique_proj_points(self, rotation):
         proj_matrix = np.array(
@@ -186,12 +199,11 @@ class ThreeDimensionalFrame(object):
     def compute_grid_image(self):
         img = np.zeros(self.imsize).astype(np.uint8)
         n = np.shape(self.pixel_grid_point)[0]
+        colors = [(100, 100, 100), (255, 255, 255), (100, 150, 0)]
+        thickness = [1, 1, 2]
         for i in range(0, n, 2):
-            print("i = ", i)
-            print(self.pixel_grid_point[i, :])
-            print(self.pixel_grid_point[i+1, :])
             cv2.line(img, (math.floor(self.pixel_grid_point[i, 0]), math.floor(self.pixel_grid_point[i, 1])),
-                     (math.floor(self.pixel_grid_point[i+1, 0]), math.floor(self.pixel_grid_point[i+1, 1])), (255, 255, 255), 1)
+                     (math.floor(self.pixel_grid_point[i+1, 0]), math.floor(self.pixel_grid_point[i+1, 1])), colors[self.corrected_grid_line_direction[i]], thickness[self.corrected_grid_line_direction[i]], cv2.LINE_AA)
         # img = cv2.flip(img, 0)
 
         # img = cv2.dilate(img, np.ones((5, 5)))
@@ -216,16 +228,20 @@ class ThreeDimensionalFrame(object):
                 self.rotation_frame_point)
             self.compute_frame_image()
 
+            # little translation to the grid as if it also moves
             self.original_grid_point = self.original_grid_point_wo_translation - \
-                np.hstack((self.cur_pose[0:3, 3] % 1, 0))
-
+                np.hstack((self.cur_pose[0, 3] %
+                          1, 0, self.cur_pose[2, 3] % 1, 0))
+            #self.original_grid_point = self.original_grid_point_wo_translation
             self.original_grid_point = np.array(self.original_grid_point).T
+            self.original_grid_line_direction = np.array(
+                self.original_grid_line_direction)
 
             self.rotation_grid_point = self.compute_grid_rotation(
                 self.original_grid_point)
             print("rotation")
-            self.corrected_rotation_grid_point = self.correct_grid_rotation(
-                self.rotation_grid_point)
+            self.corrected_rotation_grid_point, self.corrected_grid_line_direction = self.correct_grid_rotation(
+                self.rotation_grid_point, self.original_grid_line_direction)
             print("corrected")
             self.pixel_grid_point = self.cam.project(
                 self.corrected_rotation_grid_point[:3, :].T)[0]
