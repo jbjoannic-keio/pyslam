@@ -50,7 +50,7 @@ class ThreeDimensionalFrame(object):
     def __init__(self, cam, imsize, imframesize=(300, 300, 3)):
         self.cam = cam
         self.cur_pose = None
-        self.reference_pose = None
+        self.reference_pose = np.zeros((4, 4))
         self.imframesize = imframesize
         self.imsize = imsize
         self.three_dimensional_frame_image = np.array([])
@@ -69,9 +69,11 @@ class ThreeDimensionalFrame(object):
         self.pixel_grid_point = None
 
     def reset_position(self):
+        self.reference_pose = self.cur_pose.copy() - np.eye(4)
         return
 
-    def compute_inv(self, twc):
+    def compute_view(self, twc):
+        twc = twc - self.reference_pose
         R = twc[0:3, 0:3]
         T = (twc[0:3, 3]).reshape((3, 1))
         Rt = np.transpose(R)
@@ -217,11 +219,8 @@ class ThreeDimensionalFrame(object):
             self.cur_pose = map.get_frame(-1).Twc.copy()
             self.initilaizated = True
 
-        if slam.tracking.kf_ref is not None:
-            self.reference_pose = slam.tracking.kf_ref.Twc.copy()
-
         if self.initilaizated:
-            self.compute_inv(self.cur_pose)
+            self.compute_view(self.cur_pose)
             self.rotation_frame_point = self.compute_frame_rotation(
                 self.original_frame_point)
             self.pixel_frame_point = self.compute_oblique_proj_points(
