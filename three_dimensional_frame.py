@@ -26,27 +26,27 @@ import math
 import cv2
 
 
-def draw_text(img, text, pos=(0, 0),
+def draw_text(img,
+              text,
+              pos=(0, 0),
               font=cv2.FONT_HERSHEY_PLAIN,
               font_scale=3,
               text_color=(0, 255, 0),
               font_thickness=2,
               line=2,
-              text_color_bg=(0, 0, 0)
-              ):
+              text_color_bg=(0, 0, 0)):
 
     x, y = pos
     text_size, _ = cv2.getTextSize(text, font, font_scale, font_thickness)
     text_w, text_h = text_size
     cv2.rectangle(img, pos, (x + text_w, y + text_h), text_color_bg, -1)
-    cv2.putText(img, text, (x, y + text_h + font_scale - 1),
-                font, font_scale, text_color, font_thickness, line)
+    cv2.putText(img, text, (x, y + text_h + font_scale - 1), font, font_scale,
+                text_color, font_thickness, line)
 
     return text_size
 
 
 class ThreeDimensionalFrame(object):
-
     def __init__(self, cam, imsize, imframesize=(300, 300, 3)):
         self.cam = cam
         self.cur_pose = None
@@ -58,13 +58,13 @@ class ThreeDimensionalFrame(object):
         self.initilaizated = False
         self.view = None
 
-        self.original_frame_point = np.array(
-            [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 1, 1, 1]])
+        self.original_frame_point = np.array([[0, 1, 0, 0], [0, 0, 1, 0],
+                                              [0, 0, 0, 1], [1, 1, 1, 1]])
         self.rotation_frame_point = None
         self.pixel_frame_point = None
 
         self.original_grid_point_wo_translation, self.original_grid_line_direction = self.create_grid(
-            -2, 2, 1, 1, -30, 30)
+            0, 0, 1, 1, -30, 30)
         self.rotation_grid_point = None
         self.pixel_grid_point = None
 
@@ -84,22 +84,22 @@ class ThreeDimensionalFrame(object):
     def create_grid(self, x1, x2, y1, y2, z1, z2):
         original = []
         line_direction = []
-        for x in range(x1, x2+1):
-            for y in range(y1, y2+1):
+        for x in range(x1, x2 + 1):
+            for y in range(y1, y2 + 1):
                 if z1 != z2:
                     original.append([x, y, z1, 1])
                     original.append([x, y, z2, 1])
                     line_direction.append(2)
                     line_direction.append(2)
-        for y in range(y1, y2+1):
-            for z in range(z1, z2+1):
+        for y in range(y1, y2 + 1):
+            for z in range(z1, z2 + 1):
                 if x1 != x2:
                     original.append([x1, y, z, 1])
                     original.append([x2, y, z, 1])
                     line_direction.append(0)
                     line_direction.append(0)
-        for x in range(x1, x2+1):
-            for z in range(z1, z2+1):
+        for x in range(x1, x2 + 1):
+            for z in range(z1, z2 + 1):
                 if y1 != y2:
                     original.append([x, y1, z, 1])
                     original.append([x, y2, z, 1])
@@ -126,39 +126,41 @@ class ThreeDimensionalFrame(object):
     def correct_grid_rotation(self, rotation, line_direction):
         corrected_rotation = rotation.copy().astype(np.float64)
         for i in range(0, corrected_rotation.shape[1], 2):
-            if corrected_rotation[2, i] < 0.1 and corrected_rotation[2, i+1] > 0.1:
+            if corrected_rotation[2, i] < 0.1 and corrected_rotation[2, i +
+                                                                     1] > 0.1:
                 # remove points behind camera (z<0) and replace it by point in the same line at z = .1
-                ratio = (
-                    0.1-corrected_rotation[2, i+1])/(corrected_rotation[2, i]-corrected_rotation[2, i+1])
+                ratio = (0.1 - corrected_rotation[2, i + 1]) / (
+                    corrected_rotation[2, i] - corrected_rotation[2, i + 1])
                 new_point = ratio * \
                     (corrected_rotation[:, i]-corrected_rotation[:,
                      i+1]) + corrected_rotation[:, i+1]
                 corrected_rotation[:, i] = new_point
 
-            if corrected_rotation[2, i+1] < 0.1 and corrected_rotation[2, i] > 0.1:
+            if corrected_rotation[2, i +
+                                  1] < 0.1 and corrected_rotation[2, i] > 0.1:
                 # remove points behind camera (z<0) and replace it by point in the same line at z = .1
-                ratio = (
-                    0.1-corrected_rotation[2, i])/(corrected_rotation[2, i+1]-corrected_rotation[2, i])
+                ratio = (0.1 - corrected_rotation[2, i]) / (
+                    corrected_rotation[2, i + 1] - corrected_rotation[2, i])
                 new_point = ratio * \
                     (corrected_rotation[:, i+1]-corrected_rotation[:, i]
                      ) + corrected_rotation[:, i]
-                corrected_rotation[:, i+1] = new_point
+                corrected_rotation[:, i + 1] = new_point
 
-            if corrected_rotation[2, i] < 0.1 and corrected_rotation[2, i+1] < 0.1:
+            if corrected_rotation[2, i] < 0.1 and corrected_rotation[2, i +
+                                                                     1] < 0.1:
                 # remove lines behind camera (z<0)
                 corrected_rotation[:, i] = np.array([0, 0, 0, 0])
-                corrected_rotation[:, i+1] = np.array([0, 0, 0, 0])
-        mask = np.where(
-            corrected_rotation[3, :] != 0, True, False)
-        return corrected_rotation[:, mask],  line_direction[mask]
+                corrected_rotation[:, i + 1] = np.array([0, 0, 0, 0])
+        mask = np.where(corrected_rotation[3, :] != 0, True, False)
+        return corrected_rotation[:, mask], line_direction[mask]
 
     def compute_oblique_proj_points(self, rotation):
-        proj_matrix = np.array(
-            [[0, 100, 100*math.sin(math.pi/4)], [100, 0, 100*math.cos(math.pi/4)]])
+        proj_matrix = np.array([[0, 100, 100 * math.sin(math.pi / 4)],
+                                [100, 0, 100 * math.cos(math.pi / 4)]])
         imsize_i = self.imframesize[0]
         imsize_j = self.imframesize[1]
         pixel = np.dot(proj_matrix, rotation[0:3, :])
-        pixel += np.array([[imsize_j], [imsize_i]])/2
+        pixel += np.array([[imsize_j], [imsize_i]]) / 2
         return pixel
 
     def compute_cam_grid_proj(self):
@@ -170,30 +172,39 @@ class ThreeDimensionalFrame(object):
     def compute_frame_image(self):
         img = np.zeros(self.imframesize)
         colors = [(255, 0, 0), (0, 100, 0), (0, 0, 255)]
+        img = cv2.line(img, (0, 0), (self.imframesize[1], self.imframesize[0]),
+                       (255, 255, 255), 1)
         img = cv2.line(
-            img, (0, 0), (self.imframesize[1], self.imframesize[0]), (255, 255, 255), 1)
+            img, (math.floor(self.pixel_frame_point[1, 0]), 0),
+            (math.floor(self.pixel_frame_point[1, 0]), self.imframesize[0]),
+            (255, 255, 255), 1)
         img = cv2.line(
-            img, (math.floor(self.pixel_frame_point[1, 0]), 0), (math.floor(self.pixel_frame_point[1, 0]), self.imframesize[0]), (255, 255, 255), 1)
-        img = cv2.line(
-            img, (0, math.floor(self.pixel_frame_point[0, 0])), (self.imframesize[1], math.floor(self.pixel_frame_point[0, 0])), (255, 255, 255), 1)
+            img, (0, math.floor(self.pixel_frame_point[0, 0])),
+            (self.imframesize[1], math.floor(self.pixel_frame_point[0, 0])),
+            (255, 255, 255), 1)
         for i in range(1, 4):
             img = cv2.line(img, (math.floor(self.pixel_frame_point[1, 0]),
-                                 math.floor(self.pixel_frame_point[0, 0])), (math.floor(self.pixel_frame_point[1, i]),
-                                                                             math.floor(self.pixel_frame_point[0, i])), colors[i-1], 2)
+                                 math.floor(self.pixel_frame_point[0, 0])),
+                           (math.floor(self.pixel_frame_point[1, i]),
+                            math.floor(self.pixel_frame_point[0, i])),
+                           colors[i - 1], 2)
             img[math.floor(self.pixel_frame_point[0, i]),
                 math.floor(self.pixel_frame_point[1, i])] = 255
         img = cv2.flip(img, 0)
 
         patch_text = np.zeros((90, self.imframesize[1], 3))
         img = np.vstack((patch_text, img))
-        draw_text(img, "X = {}".format(round(self.cur_pose[0, 3], 2)),
-                  (0, 0), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, 2, (255, 255, 255))
+        draw_text(img, "X = {}".format(round(self.cur_pose[0, 3], 2)), (0, 0),
+                  cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, 2,
+                  (255, 255, 255))
 
-        draw_text(img, "Y = {}".format(round(self.cur_pose[1, 3], 2)),
-                  (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 100, 0), 2, 2, (255, 255, 255))
+        draw_text(img, "Y = {}".format(round(self.cur_pose[1, 3], 2)), (0, 30),
+                  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 100, 0), 2, 2,
+                  (255, 255, 255))
 
-        draw_text(img, "Z = {}".format(round(self.cur_pose[2, 3], 2)),
-                  (0, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 2, (255, 255, 255))
+        draw_text(img, "Z = {}".format(round(self.cur_pose[2, 3], 2)), (0, 60),
+                  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 2,
+                  (255, 255, 255))
 
         self.three_dimensional_frame_image = img
         return
@@ -204,8 +215,13 @@ class ThreeDimensionalFrame(object):
         colors = [(100, 100, 100), (255, 255, 255), (100, 150, 0)]
         thickness = [1, 1, 2]
         for i in range(0, n, 2):
-            cv2.line(img, (math.floor(self.pixel_grid_point[i, 0]), math.floor(self.pixel_grid_point[i, 1])),
-                     (math.floor(self.pixel_grid_point[i+1, 0]), math.floor(self.pixel_grid_point[i+1, 1])), colors[self.corrected_grid_line_direction[i]], thickness[self.corrected_grid_line_direction[i]], cv2.LINE_AA)
+            cv2.line(img, (math.floor(self.pixel_grid_point[i, 0]),
+                           math.floor(self.pixel_grid_point[i, 1])),
+                     (math.floor(self.pixel_grid_point[i + 1, 0]),
+                      math.floor(self.pixel_grid_point[i + 1, 1])),
+                     colors[self.corrected_grid_line_direction[i]],
+                     thickness[self.corrected_grid_line_direction[i]],
+                     cv2.LINE_AA)
         # img = cv2.flip(img, 0)
 
         # img = cv2.dilate(img, np.ones((5, 5)))
@@ -228,9 +244,9 @@ class ThreeDimensionalFrame(object):
             self.compute_frame_image()
 
             # little translation to the grid as if it also moves
-            self.original_grid_point = self.original_grid_point_wo_translation - \
-                np.hstack((self.cur_pose[0, 3] %
-                          1, 0, self.cur_pose[2, 3] % 1, 0))
+            self.original_grid_point = self.original_grid_point_wo_translation  # - \
+            # np.hstack((self.cur_pose[0, 3] %
+            #          1, 0, self.cur_pose[2, 3] % 1, 0))
             #self.original_grid_point = self.original_grid_point_wo_translation
             self.original_grid_point = np.array(self.original_grid_point).T
             self.original_grid_line_direction = np.array(
